@@ -18,13 +18,17 @@ export default function ChatMessage({ writ, newAuthor }: ChatMessageProps) {
   const time = new Date(daToUnix(bigInt(udToDec(seal.time))));
 
   return (
-    <div className="flex flex-col space-y-4">
-      <div className="flex">{newAuthor && <Author ship={memo.author} />}</div>
+    <div className="flex flex-col">
+      {newAuthor ? (
+        <div className="flex py-1">
+          <Author ship={memo.author} />
+        </div>
+      ) : null}
       <div className="flex space-x-3">
-        <div className="my-1 text-xs font-semibold text-gray-400">
+        <div className="py-3 text-xs font-semibold text-gray-400">
           {format(time, 'HH:mm')}
         </div>
-        <div className="flex flex-col space-y-2">
+        <div className="flex flex-col space-y-2 p-2">
           <ChatContent content={memo.content} />
           {Object.keys(seal.feels).length > 0 && <ChatReactions seal={seal} />}
         </div>

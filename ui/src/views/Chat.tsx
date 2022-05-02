@@ -26,8 +26,8 @@ export default function Chat() {
         </div>
       }
       main={
-        <div className="flex h-full w-full flex-col overflow-auto p-4">
-          <div className="mt-auto flex flex-col justify-end space-y-4">
+        <div className="flex h-full w-full flex-col overflow-auto px-4">
+          <div className="mt-auto flex flex-col justify-end">
             {messages
               .keys()
               .reverse()
