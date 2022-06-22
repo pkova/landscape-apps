@@ -5,7 +5,12 @@ import { useNavigate } from 'react-router';
 import Dialog, { DialogContent } from '../components/Dialog';
 import EllipsisIcon from '../components/icons/EllipsisIcon';
 import LeaveIcon from '../components/icons/LeaveIcon';
-import { useBriefs, useChatState, usePinnedChats } from '../state/chat';
+import {
+  useBriefs,
+  useChatState,
+  usePinnedChats,
+  useToggleChatPin,
+} from '../state/chat';
 import PinIcon from '../components/icons/PinIcon';
 import BulletIcon from '../components/icons/BulletIcon';
 
@@ -21,7 +26,8 @@ export default function DmOptions({
   className,
 }: DMOptionsProps) {
   const navigate = useNavigate();
-  const pinned = usePinnedChats();
+  const { data: pinned } = usePinnedChats();
+  const { mutate: toggle } = useToggleChatPin();
   const briefs = useBriefs();
   const hasActivity = (briefs[ship]?.count ?? 0) > 0 || pending;
   const [isOpen, setIsOpen] = useState(false);
@@ -51,13 +57,9 @@ export default function DmOptions({
     (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
       e.stopPropagation();
       const isPinned = pinned.includes(ship);
-      if (isPinned) {
-        useChatState.getState().unpinDm(ship);
-      } else {
-        useChatState.getState().pinDm(ship);
-      }
+      toggle({ ship, pin: !isPinned });
     },
-    [ship, pinned]
+    [ship, pinned, toggle]
   );
 
   return (

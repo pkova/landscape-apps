@@ -56,7 +56,7 @@ export default function GroupList({
   pinned = false,
 }: GroupListProps) {
   const flags = useGroupList();
-  const pinnedFlags = usePinnedGroups();
+  const { data: pinnedFlags } = usePinnedGroups();
   const gangs = useGangList();
   const { sortFn, sortOptions } = useSidebarSort();
 

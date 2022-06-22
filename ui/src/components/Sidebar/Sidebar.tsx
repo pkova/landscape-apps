@@ -13,7 +13,7 @@ import { usePinnedGroups } from '../../state/groups';
 
 export default function Sidebar() {
   const isMobile = useIsMobile();
-  const pinned = usePinnedGroups();
+  const { data: pinned } = usePinnedGroups();
   const { sortFn, setSortFn, sortOptions } = useSidebarSort();
   // TODO: get notification count from hark store
   const notificationCount = 0;

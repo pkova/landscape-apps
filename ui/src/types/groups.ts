@@ -175,6 +175,11 @@ export interface GroupPreview {
   cordon: Cordon;
 }
 
+export interface GroupPin {
+  flag: string;
+  pin: boolean;
+}
+
 export interface Invite {
   text: string;
   ship: string;

@@ -26,10 +26,11 @@ import {
   ChatStory,
   ChatWhom,
   DmAction,
+  DmPin,
   DmRsvp,
   WritDiff,
 } from '../types/chat';
-import { GroupAction } from '../types/groups';
+import { GroupAction, GroupPin } from '../types/groups';
 import mockContacts from './contacts';
 
 const getNowUd = () => decToUd(unixToDa(Date.now() * 1000).toString());
@@ -55,6 +56,12 @@ const startIndexSet3 = Object.keys(chatWritsSet3).sort(sortByUd)[0];
 const set3Da = startIndexSet3;
 
 const chatWritsSet4 = makeFakeChatWrits(3);
+
+const fakeDefaultSub = {
+  action: 'subscribe',
+  app: 'chat',
+  path: '/',
+} as SubscriptionHandler;
 
 const groupSub = {
   action: 'subscribe',
@@ -120,6 +127,23 @@ const groups: Handler[] = [
     app: 'groups',
     path: '/groups/pinned',
     func: () => pinnedGroups,
+  },
+  {
+    action: 'poke',
+    app: 'groups',
+    mark: 'group-pin',
+    returnSubscription: fakeDefaultSub,
+    initialResponder: (req) => {
+      if (req.json.pin) {
+        pinnedGroups.push(req.json.flag);
+      } else {
+        pinnedGroups.splice(pinnedGroups.indexOf(req.json.flag), 1);
+      }
+
+      return createResponse(req);
+    },
+    dataResponder: (req: Message & Poke<GroupPin>) =>
+      createResponse(req, 'diff'),
   },
   {
     action: 'scry',
@@ -351,6 +375,22 @@ const dms: Handler[] = [
   {
     action: 'poke',
     app: 'chat',
+    mark: 'dm-pin',
+    returnSubscription: fakeDefaultSub,
+    initialResponder: (req: Message & Poke<DmPin>) => {
+      if (req.json.pin) {
+        pinnedDMs.push(req.json.ship);
+      } else {
+        pinnedDMs.splice(pinnedDMs.indexOf(req.json.ship), 1);
+      }
+
+      return createResponse(req);
+    },
+    dataResponder: (req) => createResponse(req, 'diff'),
+  },
+  {
+    action: 'poke',
+    app: 'chat',
     mark: 'dm-action',
     returnSubscription: dmSub,
     initialResponder: (
@@ -414,11 +454,7 @@ const dms: Handler[] = [
     action: 'poke',
     app: 'chat',
     mark: 'dm-unarchive',
-    returnSubscription: {
-      action: 'subscribe',
-      app: 'chat',
-      path: '/',
-    } as SubscriptionRequestInterface,
+    returnSubscription: fakeDefaultSub,
     dataResponder: (req: Message & Poke<string>) => {
       const index = archive.indexOf(req.json);
       archive.splice(index, 1);

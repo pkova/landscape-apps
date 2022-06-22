@@ -10,14 +10,15 @@ import Person16Icon from '../icons/Person16Icon';
 import EllipsisIcon from '../icons/EllipsisIcon';
 import BulletIcon from '../icons/BulletIcon';
 import { useBriefs } from '../../state/chat';
-import { useGroupState, usePinnedGroups } from '../../state/groups';
+import { useGroupPinToggle, usePinnedGroups } from '../../state/groups';
 
 export function useGroupActions(flag: string) {
   const [_copied, doCopy] = useCopyToClipboard();
   const [isOpen, setIsOpen] = useState(false);
   const [copyItemText, setCopyItemText] = useState('Copy Group Link');
-  const pinned = usePinnedGroups();
-  const isPinned = pinned.includes(flag);
+  const { data: pinned } = usePinnedGroups();
+  const { mutate: toggle } = useGroupPinToggle();
+  const isPinned = pinned?.includes(flag);
 
   const onCopyClick = useCallback(
     // eslint-disable-next-line prefer-arrow-callback
@@ -41,13 +42,9 @@ export function useGroupActions(flag: string) {
     // eslint-disable-next-line prefer-arrow-callback
     function <T>(e: React.MouseEvent<T>) {
       e.stopPropagation();
-      if (isPinned) {
-        useGroupState.getState().unpinGroup(flag);
-      } else {
-        useGroupState.getState().pinGroup(flag);
-      }
+      toggle({ flag, pin: !isPinned });
     },
-    [flag, isPinned]
+    [flag, isPinned, toggle]
   );
 
   return {

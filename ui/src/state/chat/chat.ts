@@ -5,6 +5,7 @@ import { BigIntOrderedMap, decToUd, unixToDa } from '@urbit/api';
 import { Poke } from '@urbit/http-api';
 import { BigInteger } from 'big-integer';
 import { useCallback, useMemo } from 'react';
+import { useMutation, useQuery, useQueryClient } from 'react-query';
 import {
   Chat,
   ChatBriefs,
@@ -17,6 +18,7 @@ import {
   ClubAction,
   ClubDelta,
   DmAction,
+  DmPin,
   Pact,
   WritDelta,
 } from '../../types/chat';
@@ -103,34 +105,7 @@ export const useChatState = create<ChatState>((set, get) => ({
   dmSubs: [],
   multiDms: {},
   pendingDms: [],
-  pinnedDms: [],
   briefs: {},
-  pinDm: async (ship) => {
-    await api.poke({
-      app: 'chat',
-      mark: 'dm-pin',
-      json: {
-        ship,
-        pin: true,
-      },
-    });
-    get().set((draft) => {
-      draft.pinnedDms = [...draft.pinnedDms, ship];
-    });
-  },
-  unpinDm: async (ship) => {
-    await api.poke({
-      app: 'chat',
-      mark: 'dm-pin',
-      json: {
-        ship,
-        pin: false,
-      },
-    });
-    get().set((draft) => {
-      draft.pinnedDms = draft.pinnedDms.filter((s) => s !== ship);
-    });
-  },
   markRead: async (whom) => {
     await api.poke({
       app: 'chat',
@@ -159,18 +134,6 @@ export const useChatState = create<ChatState>((set, get) => ({
     get().batchSet((draft) => {
       draft.pendingDms = pendingDms;
     });
-
-    try {
-      const pinnedDms = await api.scry<string[]>({
-        app: 'chat',
-        path: '/dm/pinned',
-      });
-      get().batchSet((draft) => {
-        draft.pinnedDms = pinnedDms;
-      });
-    } catch (error) {
-      console.log(error);
-    }
 
     api.subscribe({
       app: 'chat',
@@ -537,6 +500,39 @@ export function useBriefs() {
   return useChatState(useCallback((s: ChatState) => s.briefs, []));
 }
 
+export const dmPinKey = 'pinned-dms';
+
+export function useToggleChatPin() {
+  const queryClient = useQueryClient();
+
+  return useMutation<number, unknown, DmPin>(
+    ({ ship, pin }) =>
+      api.poke({
+        app: 'chat',
+        mark: 'dm-pin',
+        json: {
+          ship,
+          pin,
+        },
+      }),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(dmPinKey);
+      },
+    }
+  );
+}
+
 export function usePinnedChats() {
-  return useChatState(useCallback((s: ChatState) => s.pinnedDms, []));
+  const query = useQuery(dmPinKey, () =>
+    api.scry<string[]>({
+      app: 'chat',
+      path: '/dm/pinned',
+    })
+  );
+
+  return {
+    ...query,
+    data: query.data || [],
+  };
 }

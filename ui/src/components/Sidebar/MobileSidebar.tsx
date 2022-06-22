@@ -11,7 +11,7 @@ import { usePinnedGroups } from '../../state/groups';
 
 export default function MobileSidebar() {
   const secondary = useNavStore((state) => state.secondary);
-  const pinned = usePinnedGroups();
+  const { data: pinned } = usePinnedGroups();
   const { sortFn, setSortFn, sortOptions } = useSidebarSort();
   // TODO: get notification count from hark store
   const notificationCount = 0;

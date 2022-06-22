@@ -19,7 +19,7 @@ export default function MessagesSidebar() {
   const isMobile = useIsMobile();
   const { filter, setFilter } = useMessagesFilter();
   const briefs = useBriefs();
-  const pinned = usePinnedChats();
+  const { data: pinned } = usePinnedChats();
 
   if (isMobile) {
     return <MobileMessagesSidebar />;

@@ -17,7 +17,7 @@ interface MessagesListProps {
 
 export default function MessagesList({ filter }: MessagesListProps) {
   const pending = usePendingDms();
-  const pinned = usePinnedChats();
+  const { data: pinned } = usePinnedChats();
   const { sortOptions } = useSidebarSort(RECENT);
   const briefs = useBriefs();
 

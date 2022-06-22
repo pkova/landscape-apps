@@ -1,4 +1,5 @@
 import { unstable_batchedUpdates as batchUpdates } from 'react-dom';
+import { useMutation, useQuery, useQueryClient } from 'react-query';
 import create from 'zustand';
 import produce from 'immer';
 import { useParams } from 'react-router';
@@ -12,6 +13,7 @@ import {
   GroupUpdate,
   GroupAction,
   Rank,
+  GroupPin,
 } from '../types/groups';
 import api from '../api';
 
@@ -35,9 +37,9 @@ interface GroupState {
   groups: {
     [flag: string]: Group;
   };
-  pinnedGroups: string[];
-  pinGroup: (flag: string) => Promise<void>;
-  unpinGroup: (flag: string) => Promise<void>;
+  // pinnedGroups: string[];
+  // pinGroup: (flag: string) => Promise<void>;
+  // unpinGroup: (flag: string) => Promise<void>;
   gangs: Gangs;
   initialize: (flag: string) => Promise<number>;
   delRole: (flag: string, sect: string) => Promise<void>;
@@ -61,30 +63,10 @@ interface GroupState {
   search: (flag: string) => Promise<void>;
   join: (flag: string, joinAll: boolean) => Promise<void>;
 }
+
 export const useGroupState = create<GroupState>((set, get) => ({
   groups: {},
-  pinnedGroups: [],
   gangs: {},
-  pinGroup: async (flag) => {
-    await api.poke({
-      app: 'groups',
-      mark: 'group-remark-action',
-      json: {
-        flag,
-        diff: { pinned: true },
-      },
-    });
-  },
-  unpinGroup: async (flag) => {
-    await api.poke({
-      app: 'groups',
-      mark: 'group-remark-action',
-      json: {
-        flag,
-        diff: { pinned: false },
-      },
-    });
-  },
   banRanks: async (flag, ranks) => {
     await api.poke(
       groupAction(flag, {
@@ -183,18 +165,6 @@ export const useGroupState = create<GroupState>((set, get) => ({
         path: '/gangs',
       }),
     ]);
-
-    try {
-      const pinnedGroups = await api.scry<string[]>({
-        app: 'groups',
-        path: '/groups/pinned',
-      });
-      get().batchSet((draft) => {
-        draft.pinnedGroups = pinnedGroups;
-      });
-    } catch (error) {
-      console.log(error);
-    }
 
     set((s) => ({
       ...s,
@@ -324,6 +294,39 @@ export function useChannel(flag: string, channel: string): Channel | undefined {
   );
 }
 
+export const groupsPinKey = 'pinned-groups';
+
+export function useGroupPinToggle() {
+  const queryClient = useQueryClient();
+
+  return useMutation<number, unknown, GroupPin>(
+    ({ flag, pin }) =>
+      api.poke({
+        app: 'groups',
+        mark: 'group-pin',
+        json: {
+          flag,
+          pin,
+        },
+      }),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(groupsPinKey);
+      },
+    }
+  );
+}
+
 export function usePinnedGroups() {
-  return useGroupState(useCallback((s: GroupState) => s.pinnedGroups, []));
+  const query = useQuery(groupsPinKey, () =>
+    api.scry<string[]>({
+      app: 'groups',
+      path: '/groups/pinned',
+    })
+  );
+
+  return {
+    ...query,
+    data: query.data || [],
+  };
 }

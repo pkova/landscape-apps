@@ -6,6 +6,7 @@ import {
   Location,
   useLocation,
 } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from 'react-query';
 import { ErrorBoundary } from 'react-error-boundary';
 import Groups from './pages/Groups';
 import Channel from './pages/Channel';
@@ -35,6 +36,14 @@ import DMHome from './dms/DMHome';
 import Nav from './components/Nav/Nav';
 import GroupInfoDialog from './groups/GroupInfoDialog';
 import GroupInviteDialog from './groups/GroupInviteDialog';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: !import.meta.env.DEV,
+    },
+  },
+});
 
 interface RoutesProps {
   state: { backgroundLocation?: Location } | null;
@@ -178,9 +187,11 @@ function RoutedApp() {
       FallbackComponent={ErrorAlert}
       onReset={() => window.location.reload()}
     >
-      <Router basename={basename(mode)}>
-        <App />
-      </Router>
+      <QueryClientProvider client={queryClient}>
+        <Router basename={basename(mode)}>
+          <App />
+        </Router>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

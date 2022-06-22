@@ -209,6 +209,11 @@ export interface DmRsvp {
   ok: boolean;
 }
 
+export interface DmPin {
+  ship: string;
+  pin: boolean;
+}
+
 export interface Pact {
   writs: BigIntOrderedMap<ChatWrit>;
   index: {
