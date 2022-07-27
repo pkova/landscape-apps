@@ -293,6 +293,20 @@ export const useGroupState = create<GroupState>((set, get) => ({
     };
     await api.poke(groupAction(flag, diff));
   },
+  moveChannel: async (flag, zone, channelFlag, index) => {
+    const diff = {
+      zone: {
+        zone,
+        delta: {
+          mov: {
+            flag: channelFlag,
+            index,
+          },
+        },
+      },
+    };
+    await api.poke(groupAction(flag, diff));
+  },
   addChannelToZone: async (zone, groupFlag, channelFlag) => {
     const diff = {
       channel: {

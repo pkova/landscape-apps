@@ -199,8 +199,18 @@ interface ZoneDelete {
   delta: { del: null };
 }
 
+interface ZoneMoveChannels {
+  zone: Zone;
+  delta: {
+    mov: {
+      flag: string;
+      index: number;
+    };
+  };
+}
+
 interface ZoneDiff {
-  zone: ZoneAdd | ZoneDelete;
+  zone: ZoneAdd | ZoneDelete | ZoneMoveChannels;
 }
 
 export interface MetaDiff {
