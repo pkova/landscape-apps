@@ -29,7 +29,7 @@ export function ActualNav() {
   const isMobile = useIsMobile();
   const isChat = useIsChat();
   const flag = useRouteGroup();
-  const inChannel = useMatch('/groups/:ship/:name/channels*');
+  const inChannel = useMatch('/groups/:ship/:name/channels/*');
   const firstRender = useIsFirstRender();
   const animationConfig = {
     type: 'spring',
