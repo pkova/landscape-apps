@@ -1,5 +1,5 @@
 import cn from 'classnames';
-import { mix } from 'color2k';
+import { mix, parseToRgba } from 'color2k';
 import React, {
   ButtonHTMLAttributes,
   PropsWithChildren,
@@ -70,14 +70,20 @@ export default function SidebarItem({
   };
 
   const customHiglightStyles = () => {
-    if (hasHoverColor())
-      return {
-        backgroundColor:
-          currentTheme === 'dark'
-            ? mix(highlight, 'black', 0.7)
-            : mix(highlight, 'white', 0.85),
-      };
-    return null;
+    try {
+      parseToRgba(highlight);
+
+      if (hasHoverColor())
+        return {
+          backgroundColor:
+            currentTheme === 'dark'
+              ? mix(highlight, 'black', 0.7)
+              : mix(highlight, 'white', 0.85),
+        };
+      return null;
+    } catch (error) {
+      return null;
+    }
   };
 
   return (
