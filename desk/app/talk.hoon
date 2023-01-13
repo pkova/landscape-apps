@@ -1,93 +1,51 @@
-oned-state
-  $%  state-4
-      state-3
-      state-2
-      state-1
-      state-0
+::  chat-cli: cli chat client using chat-store and friends
+::
+::    pulls all known messages into a single stream.
+::    type ;help for usage instructions.
+::
+::    note that while the chat-store only cares about paths,
+::    we mostly deal with [ship path] (aka target) here.
+::    when sending messages (through the chat hook),
+::    we concat the ship onto the head of the path,
+::    and trust it to take care of the rest.
+::
+/-  chat
+/+  shoe, default-agent, verb, dbug
+::
+|%
++$  card  card:shoe
+::
++$  versioned-state
+  $%  state-0
   ==
 ::
-+$  state-4
-  $:  %4
++$  state-0
+  $:  %0
       sessions=(map sole-id session)                ::  sole sessions
-      bound=(map resource glyph)                    ::  bound resource glyphs
-      binds=(jug glyph resource)                    ::  resource glyph lookup
+      bound=(map flag:chat glyph)                   ::  bound chat glyphs
+      binds=(jug glyph flag:chat)                   ::  chat glyph lookup
       settings=(set term)                           ::  frontend flags
       width=@ud                                     ::  display width
       timez=(pair ? @ud)                            ::  timezone adjustment
-  ==
-::
-+$  state-3
-  $:  %3
-      sessions=(map @ta session)
-      bound=(map resource glyph)
-      binds=(jug glyph resource)
-      settings=(set term)
-      width=@ud
-      timez=(pair ? @ud)
   ==
 ::
 +$  sole-id  sole-id:shoe
 +$  session
-  $:  viewing=(set resource)                        ::  connected graphs
-      history=(list uid:post)                       ::  scrollback pointers
+  $:  viewing=(set target)                          ::  connected chats
+      history=(list [flag:chat id:chat])            ::  scrollback pointers
       count=@ud                                     ::  (lent history)
       audience=target                               ::  active target
   ==
 ::
-::TODO  remove for breach
-+$  target-2  [in-group=? =ship =path]
-+$  mail  [source=target-2 envelope:store]
-+$  state-2
-  $:  %2
-      grams=(list mail)                             ::  all messages
-      known=(set [target-2 serial:store])           ::  known message lookup
-      count=@ud                                     ::  (lent grams)
-      bound=(map target-2 glyph)                    ::  bound circle glyphs
-      binds=(jug glyph target-2)                    ::  circle glyph lookup
-      audience=(set target-2)                       ::  active targets
-      settings=(set term)                           ::  frontend flags
-      width=@ud                                     ::  display width
-      timez=(pair ? @ud)                            ::  timezone adjustment
-  ==
-::
-+$  state-1
-  $:  %1
-      grams=(list mail)                             ::  all messages
-      known=(set [target-2 serial:store])           ::  known message lookup
-      count=@ud                                     ::  (lent grams)
-      bound=(map target-2 glyph)                    ::  bound circle glyphs
-      binds=(jug glyph target-2)                    ::  circle glyph lookup
-      audience=(set target-2)                       ::  active targets
-      settings=(set term)                           ::  frontend flags
-      width=@ud                                     ::  display width
-      timez=(pair ? @ud)                            ::  timezone adjustment
-      cli=state=sole-share:shoe                     ::  console state
-      eny=@uvJ                                      ::  entropy
-  ==
-::
-+$  state-0
-  $:  grams=(list [[=ship =path] envelope:store])   ::  all messages
-      known=(set [[=ship =path] serial:store])      ::  known message lookup
-      count=@ud                                     ::  (lent grams)
-      bound=(map [=ship =path] glyph)               ::  bound circle glyphs
-      binds=(jug glyph [=ship =path])               ::  circle glyph lookup
-      audience=(set [=ship =path])                  ::  active targets
-      settings=(set term)                           ::  frontend flags
-      width=@ud                                     ::  display width
-      timez=(pair ? @ud)                            ::  timezone adjustment
-      cli=state=sole-share:shoe                     ::  console state
-      eny=@uvJ                                      ::  entropy
-  ==
-::
-+$  target  resource
++$  target  flag:chat
 ::
 +$  glyph  char
 ++  glyphs  "!@#$%^&()-=_+[]\{}'\\:\",.<>?"
 ::
 +$  command
   $%  [%target target]                              ::  set messaging target
-      [%say content:post]                           ::  send message
-      [%eval cord hoon]                             ::  send #-message
+      [%say (list inline:chat)]                     ::  send message
+      :: [%eval cord hoon]                          ::  send #-message
     ::                                              ::
       [%view $?(~ target)]                          ::  notice chat
       [%flee target]                                ::  ignore chat
@@ -108,7 +66,7 @@ oned-state
   ==                                                ::
 ::
 --
-=|  state-4
+=|  state-0
 =*  state  -
 ::
 %-  agent:dbug
@@ -157,14 +115,14 @@ oned-state
           %kick
         :_  state
         ?+  wire  ~
-          [%graph-store ~]  ~[connect:tc]
+          [%chat %ui ~]  ~[connect:tc]
         ==
       ::
           %fact
         ?+  p.cage.sign  ~|([dap.bowl %bad-sub-mark wire p.cage.sign] !!)
-            %graph-update-3
-          %-  on-graph-update:tc
-          !<(update:graph q.cage.sign)
+            %chat-action-0
+          %-  on-chat-update:tc
+          !<(action:chat q.cage.sign)
         ==
       ==
     [cards this]
@@ -199,7 +157,6 @@ oned-state
   --
 ::
 |_  =bowl:gall
-+*  libgraph  ~(. ^libgraph bowl)
 ::  +prep: setup & state adapter
 ::
 ++  prep
@@ -208,109 +165,17 @@ oned-state
   ?~  old
     [~[connect] state(width 80)]
   ::
-  =?  u.old  ?=(?(~ ^) -.u.old)
-    ^-  state-1
-    :-  %1
-    %=  u.old
-      grams  ~  ::NOTE  this only impacts historic message lookup in chat-cli
-    ::
-        known
-      ^-  (set [target-2 serial:store])
-      %-  ~(run in known.u.old)
-      |=  [t=[ship path] s=serial:store]
-      [`target-2`[| t] s]
-    ::
-        bound
-      ^-  (map target-2 glyph)
-      %-  ~(gas by *(map target-2 glyph))
-      %+  turn  ~(tap by bound.u.old)
-      |=  [t=[ship path] g=glyph]
-      [`target-2`[| t] g]
-    ::
-        binds
-      ^-  (jug glyph target-2)
-      %-  ~(run by binds.u.old)
-      |=  s=(set [ship path])
-      %-  ~(run in s)
-      |=  t=[ship path]
-      `target-2`[| t]
-    ::
-        audience
-      ^-  (set target-2)
-      %-  ~(run in audience.u.old)
-      |=  t=[ship path]
-      `target-2`[| t]
-    ==
-  ::
-  =?  u.old  ?=(%1 -.u.old)
-    ^-  state-2
-    =,  u.old
-    :*  %2
-      grams  known  count
-      bound  binds  audience
-      settings  width  timez
-    ==
-  ::
-  =^  cards-1  u.old
-    ?.  ?=(%2 -.u.old)  [~ u.old]
-    :-  :~  [%pass /chat-store %agent [our-self %chat-store] %leave ~]
-            [%pass /invites %agent [our.bowl %invite-store] %leave ~]
-        ==
-    ^-  state-3
-    :-  %3
-    :*  %+  ~(put in *(map @ta session))
-          (cat 3 'drum_' (scot %p our.bowl))
-        :*  ~  ~  0
-          ::
-            ?~  audience.u.old  *target
-            [ship ?~(path %$ i.path)]:n.audience.u.old
-        ==
-      ::
-        %-  ~(gas by *(map resource glyph))
-        %+  turn  ~(tap in bound.u.old)
-        |=  [t=target-2 g=glyph]
-        [[ship.t ?~(path.t %$ i.path.t)] g]
-      ::
-        ^-  (jug glyph resource)
-        %-  ~(run by binds.u.old)
-        |=  s=(set target-2)
-        %-  ~(run in s)
-        |=  t=target-2
-        [ship.t ?~(path.t %$ i.path.t)]
-      ::
-        settings.u.old
-        width.u.old
-        timez.u.old
-    ==
-  ::
-  =^  cards-2  u.old
-    ?.  ?=(%3 -.u.old)  [~ u.old]
-    :-  %+  turn  ~(tap in ~(key by sessions.u.old))
-        |=  id=@ta
-        ^-  card:agent:gall
-        [%give %kick ~[/sole/[id]] ~]
-    =-  u.old(- %4, sessions -)
-    %-  ~(gas by *(map sole-id session))
-    %+  murn  ~(tap by sessions.u.old)
-    |=  [id=@ta s=session]
-    (bind (upgrade-id:sole:shoe id) (late s))
-  ::
-  ?>  ?=(%4 -.u.old)
+  ?>  ?=(%0 -.u.old)
   :_  u.old
-  ;:  welp
-    cards-1
-    cards-2
-  ::
-    ?:  %-  ~(has by wex.bowl)
-        [/graph-store our-self %graph-store]
-      ~
-    ~[connect]
-  ==
-::  +connect: connect to the graph-store
+  ?:  %-  ~(has by wex.bowl)
+      [/chat/ui our-self %chat]
+    ~
+  ~[connect]
+::  +connect: connect to the chat backend
 ::
 ++  connect
   ^-  card
-  [%pass /graph-store %agent [our-self %graph-store] %watch /updates]
+  [%pass /chat/ui %agent [our-self %chat] %watch /ui]
 ::
 ::TODO  better moon support. (name:title our.bowl)
 ++  our-self  our.bowl
@@ -324,34 +189,14 @@ oned-state
 ++  tor
   |=  [[* a=term] [* b=term]]
   (aor a b)
-::  +ior: index ordering for nodes
+::  +get-chats: get known chat channels
 ::
-++  ior
-  |=  [[a=index:post *] [b=index:post *]]
-  (aor a b)
-::  +safe-get-graph: virtualized +get-graph
+++  get-chats  ~+
+  (scry-for (set flag:chat) %chat /chat)
+::  +chat-exists: check whether a chat exists
 ::
-++  safe-get-graph
-  |=  =resource
-  ^-  (unit update:graph)
-  =/  res=(each update:graph tang)
-    ::TODO  doesn't actually contain the crash?
-    %-  mule  |.
-    (get-graph:libgraph resource)
-  ?-  -.res
-    %&  `p.res
-    %|  ~
-  ==
-::  +is-chat-graph: check whether graph contains chat-style data
-::
-++  is-chat-graph
-  |=  =resource
-  ^-  ?
-  =/  update=(unit update:graph)
-    (safe-get-graph resource)
-  ?~  update  |
-  ?>  ?=(%add-graph -.q.u.update)
-  =(`%graph-validator-chat mark.q.u.update)
+++  chat-exists
+  ~(has in get-chats)
 ::  +poke-noun: debug helpers
 ::
 ++  poke-noun
@@ -360,29 +205,24 @@ oned-state
   ?:  ?=(%connect a)
     [[connect ~] state]
   [~ state]
-::  +handle-graph-update: get new mailboxes & messages
+::  +on-chat-update: get new messages
 ::
-++  on-graph-update
-  |=  upd=update:graph
+++  on-chat-update
+  |=  [=flag:chat =time =diff:chat]
   ^-  (quip card _state)
-  ?.  ?=(?(%remove-graph %add-nodes) -.q.upd)
-    [~ state]
+  ?.  ?=(%writs -.diff)    [~ state]
+  ?.  ?=(%add -.q.p.diff)  [~ state]
+  =*  id=id:chat        p.p.diff
+  =*  memo=memo:chat  p.q.p.diff
   =/  sez=(list [=sole-id =session])
     ~(tap by sessions)
   =|  cards=(list card)
   |-
   ?~  sez  [cards state]
   =^  caz  session.i.sez
-    ?-  -.q.upd
-      %remove-graph  (~(notice-remove se i.sez) +.q.upd)
-    ::
-        %add-nodes
-      ?.  (~(has in viewing.session.i.sez) resource.q.upd)
-        [~ session.i.sez]
-      %+  ~(read-posts se i.sez)
-        resource.q.upd
-      (sort ~(tap by nodes.q.upd) ior)
-    ==
+    ?.  (~(has in viewing.session.i.sez) flag)
+      [~ session.i.sez]
+    (~(read-post se i.sez) flag id memo)
   =.  sessions  (~(put by sessions) i.sez)
   $(sez t.sez, cards (weld cards caz))
 ::  +se: session event handling
@@ -391,34 +231,15 @@ oned-state
   |_  [=sole-id =session]
   +*  sh-out  ~(. ^sh-out sole-id session)
   ::
-  ++  read-posts
-    |=  [=target nodes=(list [=index:post =node:graph])]
-    ^-  (quip card _session)
-    =^  cards  nodes
-      ^-  (quip card _nodes)
-      =+  count=(lent nodes)
-      ?.  (gth count 10)  [~ nodes]
-      :_  (swag [(sub count 10) 10] nodes)
-      [(print:sh-out "skipping {(scow %ud (sub count 10))} messages...")]~
-    |-
-    ?~  nodes  [cards session]
-    =^  caz  session
-      (read-post target [index post.node]:i.nodes)
-    $(cards (weld cards caz), nodes t.nodes)
-  ::
-  ::  +read-post: add envelope to state and show it to user
+  ::  +read-post: add message to state and show it to user
   ::
   ++  read-post
-    |=  [=target =index:post =maybe-post:graph]
+    |=  [=target =id:chat =memo:chat]
     ^-  (quip card _session)
-    ?-    -.maybe-post
-        %|  [~ session]
-        %&
-      :-  (show-post:sh-out target p.maybe-post)
-      %_  session
-        history  [[target index] history.session]
-        count    +(count.session)
-      ==
+    :-  (show-post:sh-out target memo)
+    %_  session
+      history  [[target id] history.session]
+      count    +(count.session)
     ==
   ::
   ++  notice-remove
@@ -497,9 +318,9 @@ oned-state
   ::  in case of multiple audiences, pick the most recently active one
   |-  ^-  target
   ?~  history.session  -:~(tap in lax)
-  =*  resource  resource.i.history.session
-  ?:  (~(has in lax) resource)
-    resource
+  =*  tar  -.i.history.session
+  ?:  (~(has in lax) tar)
+    tar
   $(history.session t.history.session)
 ::
 ::  +sh: shoe handling
@@ -637,29 +458,38 @@ oned-state
     ::
     ++  message
       ;~  pose
-        ;~(plug (cold %eval hax) expr)
+        :: ;~(plug (cold %eval hax) expr)
         (stag %say content)
       ==
     ::  +content: simple messages
-    ::TODO  mentions
     ::
     ++  content
       ;~  pose
-        (stag %url turl)
-        (stag %text ;~(less mic hax text))
+        (cook (late ~) (cook |=(url=@t [%link url url]) turl))
+        ;~(less mic text)
       ==
     ::  +turl: url parser
     ::
     ++  turl
-      =-  (sear - text)
-      |=  t=cord
+      =-  (sear - (plus next))
+      |=  t=tape
       ^-  (unit cord)
-      ?~((rush t aurf:de-purl:html) ~ `t)
+      ?~((rust t aurf:de-purl:html) ~ `(crip t))
     ::  +text: text message body
     ::
     ++  text
-      %+  cook  crip
-      (plus next)
+      %+  cook
+        |=  a=(list $@(@t [%ship @p]))
+        ^-  (list inline:chat)
+        %-  flop
+        %+  roll  a
+        |=  [i=$@(@t [%ship @p]) l=(list inline:chat)]
+        ^+  l
+        ?~  l    [i]~
+        ?^  i    [i l]
+        ?^  i.l  [i l]
+        [(cat 3 i.l i) t.l]
+      (plus ;~(pose (stag %ship ;~(pfix sig fed:ag)) next))
     ::  +expr: parse expression into [cord hoon]
     ::
     ++  expr
@@ -695,7 +525,7 @@ oned-state
     |^  ?-  -.job
           %target    (set-target +.job)
           %say       (say +.job)
-          %eval      (eval +.job)
+          :: %eval      (eval +.job)
         ::
           %view      (view +.job)
           %flee      (flee +.job)
@@ -733,7 +563,7 @@ oned-state
       ^-  (quip card _state)
       =.  audience  target
       [[prompt:sh-out ~] put-ses]
-    ::  +view: start printing messages from a resource
+    ::  +view: start printing messages from a chat
     ::
     ++  view
       |=  target=$?(~ target)
@@ -742,9 +572,9 @@ oned-state
       ::
       ?~  target
         [[(show-chats:sh-out ~(tap in viewing))]~ state]
-      ::  only view existing chat-type graphs
+      ::  only view existing chats
       ::
-      ?.  (is-chat-graph target)
+      ?.  (chat-exists target)
         [[(note:sh-out "no such chat")]~ put-ses]
       =.  audience  target
       =.  viewing   (~(put in viewing) target)
@@ -753,7 +583,7 @@ oned-state
           [~ state]
         (bind-default-glyph target)
       [[prompt:sh-out cards] put-ses]
-    ::  +flee: stop printing messages from a resource
+    ::  +flee: stop printing messages from a chat
     ::
     ++  flee
       |=  =target
@@ -763,23 +593,16 @@ oned-state
     ::  +say: send messages
     ::
     ++  say
-      |=  msg=content:post
+      |=  msg=(list inline:chat)
       ^-  (quip card _state)
-      =/  =serial:store  (shaf %msg-uid eny.bowl)
       :_  state
       :_  ~
-      ::TODO  move creation into lib?
       %^  act  %out-message
-        %graph-push-hook
-      :-  %graph-update-3
-      !>  ^-  update:graph
-      :-  now.bowl
-      :+  %add-nodes  audience
-      %-  ~(put by *(map index:post node:graph))
-      :-  ~[now.bowl]
-      :_  *internal-graph:graph
-      ^-  maybe-post:graph
-      [%& `post:post`[our-self ~[now.bowl] now.bowl [msg]~ ~ ~]]
+        %chat
+      :-  %chat-action-0
+      !>  ^-  action:chat
+      =/  =memo:chat  [~ our.bowl now.bowl %story ~ msg]
+      [audience now.bowl %writs [our now]:bowl %add memo]
     ::  +eval: run hoon, send code and result as message
     ::
     ::    this double-virtualizes and clams to disable .^ for security reasons
@@ -899,16 +722,16 @@ oned-state
       ++  activate
         |=  [number=tape index=@ud]
         ^-  (quip card _state)
-        ::NOTE  graph store allows node deletion, so can this crash?
-        =/  =uid:post    (snag index history)
-        =/  =node:graph  (got-node:libgraph uid)
-        =.  audience     resource.uid
-        ?:  ?=(%| -.post.node)
-          [~ state]
+        ::NOTE  careful, messages may get deleted, so this may crash...
+        =/  [=flag:chat =id:chat]  (snag index history)
+        =.  audience  flag
+        =+  %^  scry-for-marked  ,[* =writ:chat]
+              %chat
+            /chat/(scot %p p.flag)/[q.flag]/writs/writ/id/[(scot %p p.id)]/[(scot %ud q.id)]/writ
         :_  put-ses
         ^-  (list card)
         :~  (print:sh-out ['?' ' ' number])
-            (effect:sh-out ~(render-activate mr resource.uid p.post.node))
+            (effect:sh-out ~(render-activate mr flag +.writ))
             prompt:sh-out
         ==
       --
@@ -916,10 +739,7 @@ oned-state
     ::
     ++  chats
       ^-  (quip card _state)
-      :_  state
-      :_  ~
-      %-  show-chats:sh-out
-      (skim ~(tap in get-keys:libgraph) is-chat-graph)
+      [[(show-chats:sh-out ~(tap in get-chats))]~ state]
     ::  +help: print (link to) usage instructions
     ::
     ++  help
@@ -991,11 +811,11 @@ oned-state
   ::  +show-post: print incoming message
   ::
   ::    every five messages, prints the message number also.
-  ::    if the message mentions the user's (shortened) ship name,
+  ::    if the message mentions the user's ship,
   ::    and the %notify flag is set, emit a bell.
   ::
   ++  show-post
-    |=  [=target =post:post]
+    |=  [=target =memo:chat]
     ^-  (list card)
     %+  weld
       ^-  (list card)
@@ -1005,12 +825,13 @@ oned-state
       %-  print
       (runt [(sub 13 (lent num)) '-'] "[{num}]")
     ^-  (list card)
-    :-  (effex ~(render-inline mr target post))
+    :-  (effex ~(render-inline mr target memo))
     =;  mentioned=?
       ?.  mentioned  ~
       [(effect %bel ~)]~
-    %+  lien  contents.post
-    (cury test %mention our.bowl)
+    ?.  ?=(%story -.content.memo)  |
+    %+  lien  q.p.content.memo
+    (cury test %ship our.bowl)
   ::  +show-create: print mailbox creation notification
   ::
   ++  show-create
@@ -1040,11 +861,11 @@ oned-state
     ^-  card
     %-  print-more
     %+  turn  (sort chats tor)
-    |=  resource
-    "{(nome:mr entity)}/{(trip name)}"
+    |=  flag:chat
+    "{(nome:mr p)}/{(trip q)}"
   --
 ::
-::  +tr: render targets (resource identifiers)
+::  +tr: render targets (chat identifiers)
 ::
 ++  tr
   |_  tr=target
@@ -1052,7 +873,7 @@ oned-state
   ::
   ++  full
     ^-  tape
-    "{(scow %p entity.tr)}/{(trip name.tr)}"
+    "{(scow %p p.tr)}/{(trip q.tr)}"
   ::  +phat: render target with local shorthand
   ::
   ::    renders as ~ship/path.
@@ -1061,9 +882,9 @@ oned-state
   ++  phat
     ^-  tape
     %+  weld
-      ?:  =(our-self entity.tr)  ~
-      (scow %p entity.tr)
-    "/{(trip name.tr)}"
+      ?:  =(our-self p.tr)  ~
+      (scow %p p.tr)
+    "/{(trip q.tr)}"
   ::  +show: render as tape, as glyph if we can
   ::
   ++  show
@@ -1081,7 +902,7 @@ oned-state
 ::
 ++  mr
   |_  $:  source=target
-          post:post
+          memo:chat
       ==
   +*  showtime  (~(has in settings) %showtime)
       notify    (~(has in settings) %notify)
@@ -1092,8 +913,16 @@ oned-state
     %+  add  15
     ?:(showtime 11 0)
   ::
+  ++  render-notice
+    ?>  ?=(%notice -.content)
+    :+  %sole  %klr
+    ^-  styx
+    [[`%un ~ ~] ~[pfix.p.content (scot %p author) sfix.p.content]]~
+  ::
   ++  render-inline
     ^-  shoe-effect:shoe
+    ?.  ?=(%story -.content)
+      render-notice
     :+  %row
       :-  15
       ?.  showtime
@@ -1104,10 +933,10 @@ oned-state
     ?.  showtime  ~
     :_  ~
     :-  %t
-    =.  time-sent
+    =.  sent
       %-  ?:(p.timez add sub)
-      [time-sent (mul q.timez ~h1)]
-    =+  dat=(yore time-sent)
+      [sent (mul q.timez ~h1)]
+    =+  dat=(yore sent)
     =*  t   (d-co:co 2)
     =,  t.dat
     %-  crip
@@ -1115,68 +944,137 @@ oned-state
   ::
   ++  line
     ^-  tape
+    ?>  ?=(%story -.content)
     %-  zing
     %+  join  "\0a"
-    %-  turn
-    :_  |=(ls=(list tape) `tape`(zing (join " " ls)))
-    %+  roll  contents
-    |=  [=content:post out=(list (list tape))]
-    ?-  -.content
-      %text       (append-inline out (trip text.content))
-      %mention    (append-inline out (scow %p ship.content))
-      %reference  (append-inline out "^")
+    %+  weld
+      (turn p.p.content block-as-tape)
+    (inlines-as-tapes & q.p.content)
+  ::
+  ++  inlines-as-tapes
+    |=  [lim=? lis=(list inline:chat)]
+    |^  ^-  (list tape)
+        %-  murn
+        :_  |=(ls=(list tape) ?:(=(~ ls) ~ (some `tape`(zing ls))))
+        (roll lis process-inline)
     ::
-        %code
-      %+  snoc  out
-      ^-  (list tape)
-      :-  (trip expression.content)
-      ?:  =(~ output.content)  ~
-      :-  "\0a"
-      ~(ram re (snag 0 output.content))^~
+    ++  process-inline
+      =/  quote=@ud  0
+      |=  [=inline:chat out=(list (list tape))]
+      ?@  inline  (append-inline out (trip inline))
+      ?-  -.inline
+        %tag                        (append-inline out "#{(trip p.inline)}")
+        %block                      (append-solo out "[{(trip p.inline)}]")
+        %ship                       (append-inline out (scow %p p.inline))
+        %break                      ?:  =(0 quote)  (snoc out ~)
+                                    (snoc out [(snoc (reap quote '>') ' ') ~])
+      ::
+          %code
+        =.  out  (append-solo out "```")
+        =.  out  (append-inline out (trip p.inline))
+        (append-solo out "```")
+      ::
+          ?(%italics %bold %strike %blockquote %inline-code)
+        ~?  ?=(%blockquote -.inline)  inline
+        =/  lim=tape
+          ?-  -.inline
+            %italics      "_"
+            %bold         "**"
+            %strike       "~~"
+            %blockquote   "\""
+            %inline-code  "`"
+          ==
+        =?  out  !?=(%blockquote -.inline)
+          (append-inline out lim)
+        =.  out
+          ?:  ?=(%inline-code -.inline)
+            (append-inline out (trip p.inline))
+          =?  quote  ?=(%blockquote -.inline)  +(quote)
+          =?  out    ?=(%blockquote -.inline)  $(inline [%break ~])
+          |-
+          ?~  p.inline  out
+          =.  out  ^$(inline i.p.inline)
+          ::TODO  this still renders a trailing newline before nested quotes
+          ?.  =([%break ~]~ t.p.inline)
+            $(p.inline t.p.inline)
+          $(p.inline t.p.inline, quote (dec quote))
+        ?:  ?=(%blockquote -.inline)  out
+        (append-inline out lim)
+      ::
+          %link
+        =?  out  !=(p.inline q.inline)
+          (append-inline out (snoc (trip q.inline) ' '))
+        ?.  lim
+          (append-solo out (trip p.inline))
+        %+  append-inline  out
+        =+  wyd=content-width
+        =+  ful=(trip p.inline)
+        ::  if the full url fits, just render it.
+        ?:  (gte wyd (lent ful))  ful
+        ::  if it doesn't, prefix with _ and truncate domain with ellipses
+        =.  wyd  (sub wyd 2)
+        :-  '_'
+        =-  (weld - "_")
+        =+  prl=(rust ful aurf:de-purl:html)
+        ?~  prl  (scag wyd ful)
+        =+  hok=r.p.p.u.prl
+        =;  domain=tape
+          %+  swag
+            [(sub (max wyd (lent domain)) wyd) wyd]
+          domain
+        ?.  ?=(%& -.hok)
+          +:(scow %if p.hok)
+        %+  reel  p.hok
+        |=  [a=knot b=tape]
+        ?~  b  (trip a)
+        (welp b '.' (trip a))
+      ==
     ::
-        %url
-      %+  append-inline  out
-      =+  wyd=content-width
-      =+  ful=(trip url.content)
-      ::  if the full url fits, just render it.
-      ?:  (gte wyd (lent ful))  ful
-      ::  if it doesn't, prefix with _ and truncate domain with ellipses
-      =.  wyd  (sub wyd 2)
-      :-  '_'
-      =-  (weld - "_")
-      =+  prl=(rust ful aurf:de-purl:html)
-      ?~  prl  (scag wyd ful)
-      =+  hok=r.p.p.u.prl
-      =;  domain=tape
-        %+  swag
-          [(sub (max wyd (lent domain)) wyd) wyd]
-        domain
-      ?.  ?=(%& -.hok)
-        +:(scow %if p.hok)
-      %+  reel  p.hok
-      |=  [a=knot b=tape]
-      ?~  b  (trip a)
-      (welp b '.' (trip a))
+    ++  append-solo
+      |=  [content=(list (list tape)) newline=tape]
+      ^+  content
+      %+  weld  content
+      `_content`~[[newline]~ ~]
+    ::
+    ++  append-inline
+      |=  [content=(list (list tape)) inline=tape]
+      ^+  content
+      ?:  =(~ content)
+        ~[~[inline]]
+      =/  last
+        (dec (lent content))
+      =/  old=(list tape)
+        (snag last content)
+      =/  new=(list tape)
+        ?.  =(~ old)  (snoc old inline)
+        ::  clean up leading space, common after solo elements
+        ?:  ?=([%' ' *] inline)  [t.inline]~
+        [inline]~
+      (snap content last new)
+    --
+  ::
+  ++  block-as-tape
+    |=  =block:chat
+    ^-  tape
+    ?-  -.block
+      %image  "[img: {(trip alt.block)}]"
+    ::
+        %cite
+      ?-  -.cite.block
+          %chan   =,  cite.block
+        ::NOTE  we cannot safely scry because of no existence checks...
+        "#{(trip p.nest)}: <ref>"
+      ::
+          %group  =,  cite.block
+        "#group: {(scow %p p.flag)}/{(trip q.flag)}"
+      ::
+          %desk   =,  cite.block
+        "#desk: {(scow %p p.flag)}/{(trip q.flag)}{(spud wer)}"
+      ::
+          %bait
+        "#bait"  ::TODO  scry once we can do it safely
+      ==
     ==
-  ::
-  ++  append-newline
-    |=  [content=(list (list tape)) newline=tape]
-    ^-  (list (list tape))
-    (snoc content ~[newline])
-  ::
-  ++  append-inline
-    |=  [content=(list (list tape)) inline=tape]
-    ^-  (list (list tape))
-    ?:  =(~ content)
-      ~[~[inline]]
-    =/  last
-      (dec (lent content))
-    =/  old=(list tape)
-      (snag last content)
-    =/  new=(list tape)
-      (snoc old inline)
-    (snap content last new)
-
   ::  +activate: produce sole-effect for printing message details
   ::
   ++  render-activate
@@ -1186,47 +1084,24 @@ oned-state
   ::
   ++  meta
     ^-  tang
-    =+  hed=leaf+"{(scow %uv (fall hash 0))} at {(scow %da time-sent)}"
+    =+  hed=leaf+"sent at {(scow %da sent)}"
     =/  src=tape  ~(phat tr source)
     [%rose [" " ~ ~] [hed >author< [%rose [", " "to " ~] [leaf+src]~] ~]]~
   ::  +body: long-form render of message contents
   ::
   ++  body
+    ?>  ?=(%story -.content)
     |-  ^-  sole-effect:shoe
     :-  %mor
-    %+  turn  contents
-    |=  =content:post
-    ^-  sole-effect:shoe
-    ?-  -.content
-      %text       txt+(trip text.content)
-      %url        url+url.content
-    ::
-        %reference
-      ?-  -.reference.content
-          %graph
-        txt+"[reference to msg in {~(phat tr resource.uid.reference.content)}]"
-      ::
-          %group
-        txt+"[reference to msg in {~(phat tr group.reference.content)}]"
-      ::
-          %app
-        =,  reference.content
-        txt+"[reference to app: {(scow %p ship)}/{(trip desk)}{(spud path)}]"
-      ==
-    ::
-        %mention
-      ?.  =(ship.content our-self)  txt+(scow %p ship.content)
-      :-  %mor
-      :-  klr+[[`%br ~ ~]^(scow %p ship.content)]~  ::TODO  inline
-      ?.(notify ~ [%bel ~]~)
-    ::
-        %code
-      :-  %txt
-      %+  weld  (trip expression.content)
-      ?:  =(~ output.content)  ~
-      :-  '\0a'
-      ~(ram re (snag 0 output.content))
-    ==
+    %+  weld
+      ?:  =(~ p.p.content)  ~
+      =-  (snoc - [%txt "---"])
+      %+  turn  p.p.content
+      |=  =block:chat
+      txt+(block-as-tape block)
+    ::TODO  we could actually be doing styling here with %klr
+    ::      instead of producing plain %txt output. maybe one day...
+    (turn (inlines-as-tapes | q.p.content) (lead %txt))
   ::  +nome: prints a ship name in 14 characters, left-padding with spaces
   ::
   ++  nome
@@ -1250,16 +1125,11 @@ oned-state
   :-  (tufa (scag end `(list @)`txt))
   $(txt (slag ?:(nex +(end) end) `tape`txt))
 ::
-::NOTE  anything that uses this breaks moons support, because moons don't sync
-::      full app state rn
+++  scry-for-marked
+  |*  [=mold app=term =path]
+  .^(mold %gx (scot %p our.bowl) app (scot %da now.bowl) path)
+::
 ++  scry-for
   |*  [=mold app=term =path]
-  .^  mold
-    %gx
-    (scot %p our.bowl)
-    app
-    (scot %da now.bowl)
-    (snoc `^path`path %noun)
-  ==
+  (scry-for-marked mold app (snoc `^path`path %noun))
 --
-
